@@ -473,3 +473,4 @@ checkpoints/
 datasets/
 logs/
 .VSCodeCounter/
+EuroSAT_MS/
