@@ -1,6 +1,6 @@
 model_name=MAE
 #32 64 128 256
-for batch_size in 128 #32 64 128 256
+for batch_size in 16 #32 64 128 256
 do
 for lr in 0.001
 do
@@ -18,7 +18,7 @@ python -u run.py \
   --mask_rate ${mask_rate} \
   --model $model_name \
   --data eurosat_rgb \
-  --d_model 64 \
+  --d_model 192 \
   --c_in 3 \
   --c_out 3 \
   --patience 4 \

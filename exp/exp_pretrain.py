@@ -55,7 +55,8 @@ class Exp_Pretrain(Exp_Basic):
                 x = x.float().to(self.device)
                 mask = mask.to(self.device)
                 outputs = self.model(x, mask)
-                loss = criterion(outputs * (1 - mask), x * (1 - mask))
+                mask_expanded = mask.repeat(1, 1, 1, x.shape[-1])
+                loss = criterion(x[mask_expanded == 0], outputs[mask_expanded == 0])
                 total_loss += loss.item() * x.size(0)
 
         avg_loss = total_loss / len(vali_data)
@@ -93,12 +94,14 @@ class Exp_Pretrain(Exp_Basic):
 
                 model_optim.zero_grad()
                 outputs = self.model(x, mask)
-                loss = criterion(outputs * (1 - mask), x * (1 - mask))
+                mask_expanded = mask.repeat(1, 1, 1, x.shape[-1])
+
+                loss = criterion(x[mask_expanded == 0], outputs[mask_expanded == 0])
                 loss.backward()
                 model_optim.step()
                 train_loss.append(loss.item())
 
-                if (i + 1) % 20 == 0 or (i + 1) == train_steps:
+                if (i + 1) % 100 == 0 or (i + 1) == train_steps:
                     iter_time = (time.time() - time_start) / iter_count
                     eta = iter_time * (train_steps - i - 1)
                     print(f"[Epoch {epoch+1}] Step {i+1}/{train_steps} | Loss: {loss.item():.6f} | ETA: {eta:.1f}s")
@@ -172,12 +175,15 @@ class Exp_Pretrain(Exp_Basic):
                 all_preds.append(reconstructed.cpu().numpy())
                 all_targets.append(batch_x.cpu().numpy())
 
-                if i % 2 == 0:
+                if i % 20 == 0:
                     visualize_images(
-                        original=batch_x,
+                        original=batch_x*masks,
                         reconstructed=reconstructed,
                         save_path=os.path.join(result_dir, f"sample_{i}.png")
                     )
+                    np.save(os.path.join(result_dir, f"pred_{i}.npy"), reconstructed.cpu().numpy())
+                    np.save(os.path.join(result_dir, f"targets_{i}.npy"), batch_x.cpu().numpy())
+                    np.save(os.path.join(result_dir, f"masks_{i}.npy"), masks.cpu().numpy())
                     iter_time = (time.time() - time_start) / iter_count
                     eta = iter_time * (len(test_loader) - i - 1)
                     print(f"[Test] Step {i+1}/{len(test_loader)} | Loss: {loss.item():.6f} | ETA: {eta:.1f}s")

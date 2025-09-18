@@ -1,6 +1,6 @@
 model_name=CNN
 #32 64 128 256
-for batch_size in 128 #32 64 128 256
+for batch_size in 16 #32 64 128 256
 do
 for lr in 0.001
 do

@@ -92,7 +92,7 @@ class Dataset_EuroSAT_MS(Dataset):
 
             mask = generate_block_mask(self.image_size[0], self.image_size[1], self.missing_rate)
             mask = np.expand_dims(mask, axis=-1)
-            x = data * mask
+            x = data
             return torch.tensor(x, dtype=torch.float32), torch.tensor(mask, dtype=torch.float32)
 
 
@@ -150,7 +150,7 @@ class Dataset_EuroSAT_RGB(Dataset):
 
             mask = generate_block_mask(self.image_size[0], self.image_size[1], self.missing_rate)
             mask = np.expand_dims(mask, axis=-1)
-            x = data * mask
+            x = data
             return torch.tensor(x, dtype=torch.float32), torch.tensor(mask, dtype=torch.float32)
 
 
@@ -206,5 +206,5 @@ class Dataset_EuroSAT_NIR(Dataset):
 
             mask = generate_block_mask(self.image_size[0], self.image_size[1], self.missing_rate)
             mask = np.expand_dims(mask, axis=-1)
-            x = data * mask
+            x = data
             return torch.tensor(x, dtype=torch.float32), torch.tensor(mask, dtype=torch.float32)

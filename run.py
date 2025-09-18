@@ -37,7 +37,12 @@ parser.add_argument('--d_model', type=int, default=64)
 parser.add_argument('--n_heads', type=int, default=8)
 parser.add_argument('--e_layers', type=int, default=12)
 parser.add_argument('--d_ff', type=int, default=2048)
-parser.add_argument('--dropout', type=float, default=0.1)
+parser.add_argument('--dropout', type=float, default=0.2)
+parser.add_argument('--num_heads', type=int, default=12)
+parser.add_argument('--encoder_layers', type=int, default=12)
+parser.add_argument('--decoder_layers', type=int, default=8)
+parser.add_argument('--mlp_ratio', type=float, default=4.0)
+parser.add_argument('--mask_ratio', type=float, default=0.75)
 
 # optimization
 parser.add_argument('--num_workers', type=int, default=2, help='data loader num workers')
