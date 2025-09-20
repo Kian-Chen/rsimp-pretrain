@@ -18,7 +18,7 @@ python -u run.py \
   --mask_rate ${mask_rate} \
   --model $model_name \
   --data eurosat_rgbn \
-  --d_model 768 \
+  --d_model 192 \
   --c_in 4 \
   --c_out 4 \
   --patience 4 \
