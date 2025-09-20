@@ -272,3 +272,82 @@ class Dataset_EuroSAT_NIR(Dataset):
             mask = np.expand_dims(mask, axis=-1)
             x = data
             return torch.tensor(x, dtype=torch.float32), torch.tensor(mask, dtype=torch.float32)
+
+class Dataset_EuroSAT_RGBN(Dataset):
+    """
+    EuroSAT-MS RGBN-only dataset.
+    Channels: B4(R), B3(G), B2(B), B8(NIR)
+    """
+    def __init__(self, configs, image_size=(64, 64), artificially_missing_rate=0.5, flag='train'):
+        self.root_dir = configs.data_path
+        self.image_size = image_size
+        self.missing_rate = artificially_missing_rate
+        self.flag = flag
+
+        self.files = []
+        for class_dir in os.listdir(self.root_dir):
+            class_path = os.path.join(self.root_dir, class_dir)
+            if os.path.isdir(class_path):
+                self.files.extend(glob.glob(os.path.join(class_path, "*.tif")))
+
+        # train / val / test
+        self.files.sort()
+        n_total = len(self.files)
+        n_train = int(0.7 * n_total)
+        n_val = int(0.2 * n_total)
+        if flag == 'train':
+            self.files = self.files[:n_train]
+        elif flag == 'val':
+            self.files = self.files[n_train:n_train+n_val]
+        else:
+            self.files = self.files[n_train+n_val:]
+
+        self.channels = [EUROSAT_MS_BAND_ORDER['B4'],
+                         EUROSAT_MS_BAND_ORDER['B3'],
+                         EUROSAT_MS_BAND_ORDER['B2'],
+                         EUROSAT_MS_BAND_ORDER['B8']]
+
+        all_data = []
+        for f in self.files:
+            try:
+                with rasterio.open(f) as src:
+                    d = src.read().astype(np.float32) / 10000.0
+                    d = d[self.channels, :, :].reshape(len(self.channels), -1)
+                    all_data.append(d)
+            except:
+                continue
+        if len(all_data) > 0:
+            all_data = np.concatenate(all_data, axis=1)
+            self.mean = all_data.mean(axis=1)
+            self.std = all_data.std(axis=1)
+            del all_data
+        else:
+            self.mean = np.zeros(len(self.channels))
+            self.std = np.ones(len(self.channels))
+
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        while True:
+            path = self.files[idx]
+            try:
+                with rasterio.open(path) as src:
+                    data = src.read().astype(np.float32) / 10000.0
+                    data = data[self.channels, :, :]
+                    data = (data - (self.mean - 3 * self.std)[:, None, None]) / ((6 * self.std)[:, None, None] + 1e-6)
+                    data = np.clip(data, 0.0, 1.0)
+                if data.shape[1:3] != self.image_size:
+                    data = np.stack([np.array(Image.fromarray(d).resize(self.image_size, resample=Image.BILINEAR))
+                                     for d in data])
+                data = np.transpose(data, (1, 2, 0))
+            except Exception as e:
+                # print(f"Warning: failed to read {path}, skipping. Error: {e}")
+                idx = random.randint(0, len(self.files)-1)
+                continue
+
+            mask = generate_block_mask(self.image_size[0], self.image_size[1], self.missing_rate)
+            mask = np.expand_dims(mask, axis=-1)
+            x = data
+            return torch.tensor(x, dtype=torch.float32), torch.tensor(mask, dtype=torch.float32)

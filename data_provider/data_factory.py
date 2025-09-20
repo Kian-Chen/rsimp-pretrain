@@ -1,12 +1,13 @@
 import torch
 from torch.utils.data import DataLoader
-from data_provider.data_loader import Dataset_EuroSAT_MS, Dataset_EuroSAT_RGB, Dataset_EuroSAT_NIR
+from data_provider.data_loader import Dataset_EuroSAT_MS, Dataset_EuroSAT_RGB, Dataset_EuroSAT_NIR, Dataset_EuroSAT_RGBN
 
 # Mapping from string to Dataset class
 dataset_dict = {
     'eurosat_ms': Dataset_EuroSAT_MS,
     'eurosat_rgb': Dataset_EuroSAT_RGB,
-    'eurosat_nir': Dataset_EuroSAT_NIR
+    'eurosat_nir': Dataset_EuroSAT_NIR,
+    'eurosat_rgbn': Dataset_EuroSAT_RGBN
 }
 
 def data_provider(args, flag='train'):

@@ -8,48 +8,100 @@ import os
 import torch
 import numpy as np
 
-def visualize_images(original, reconstructed, titles=None, save_path=None):
+def visualize_images(original, reconstructed, titles=None, save_path=None, s2_rgb_indices=(3, 2, 1)):
     """
-    Visualize original and reconstructed images side by side.
-    original, reconstructed: torch.Tensor or numpy array, shape (B, H, W, C) or (B, C, H, W)
-    titles: optional list of titles
-    save_path: where to save the figure
+    Visualize original and reconstructed images side by side, handling different channel cases:
+    - 3 channels: RGB
+    - 4 channels: RGB + NIR
+    - 13 channels: Sentinel-2 (default use B4, B3, B2 as RGB)
+    
+    Args:
+        original, reconstructed: torch.Tensor or np.ndarray, shape (B, H, W, C) or (B, C, H, W)
+        titles: optional list of titles
+        save_path: path to save figure
+        s2_rgb_indices: tuple, which 3 Sentinel-2 channels to use for RGB visualization (default: (3,2,1)=B4,B3,B2)
     """
     def to_hwc(x):
+        """Convert to (B, H, W, C) numpy array."""
         if isinstance(x, torch.Tensor):
             x = x.detach().cpu().numpy()
-        if x.ndim == 4 and x.shape[1] <= 4:  # (B, C, H, W)
+        if x.ndim == 4 and x.shape[1] <= 13:  # (B, C, H, W)
             x = x.transpose(0, 2, 3, 1)
         return x
 
     def normalize_uint8(img):
-        # img_min, img_max = img.min(), img.max()
-        # if img_max > img_min:
-        #     img = (img - img_min) / (img_max - img_min) * 255.0
-        # else:
-        #     img = np.zeros_like(img)
-        img = np.clip(img*255.0, 0, 255)
+        """Normalize to [0,255] uint8."""
+        img = np.clip(img * 255.0, 0, 255)
         return img.astype('uint8')
 
     orig_imgs = to_hwc(original)
-    rec_imgs  = to_hwc(reconstructed)
+    rec_imgs = to_hwc(reconstructed)
     num_images = orig_imgs.shape[0]
+    channels = orig_imgs.shape[-1]
 
-    plt.figure(figsize=(4 * num_images, 4))
+    # Figure layout
+    plt.figure(figsize=(5 * num_images, 8))
+
     for i in range(num_images):
-        # 原图
-        plt.subplot(2, num_images, i + 1)
-        plt.imshow(normalize_uint8(orig_imgs[i]))
-        plt.axis('off')
-        if titles:
-            plt.title(titles[i] + ' orig')
+        if channels == 3:
+            # ====== RGB ======
+            plt.subplot(2, num_images, i + 1)
+            plt.imshow(normalize_uint8(orig_imgs[i]))
+            plt.axis('off')
+            if titles:
+                plt.title(f"{titles[i]} - Orig (RGB)")
 
-        # 重建图
-        plt.subplot(2, num_images, i + 1 + num_images)
-        plt.imshow(normalize_uint8(rec_imgs[i]))
-        plt.axis('off')
-        if titles:
-            plt.title(titles[i] + ' rec')
+            plt.subplot(2, num_images, i + 1 + num_images)
+            plt.imshow(normalize_uint8(rec_imgs[i]))
+            plt.axis('off')
+            if titles:
+                plt.title(f"{titles[i]} - Rec (RGB)")
+
+        elif channels == 4:
+            # ====== RGB + NIR ======
+            # RGB
+            plt.subplot(3, num_images, i + 1)
+            plt.imshow(normalize_uint8(orig_imgs[i, :, :, :3]))  # First 3 channels
+            plt.axis('off')
+            if titles:
+                plt.title(f"{titles[i]} - Orig (RGB)")
+
+            plt.subplot(3, num_images, i + 1 + num_images)
+            plt.imshow(normalize_uint8(rec_imgs[i, :, :, :3]))
+            plt.axis('off')
+            if titles:
+                plt.title(f"{titles[i]} - Rec (RGB)")
+
+            # NIR
+            plt.subplot(3, num_images, i + 1 + 2 * num_images)
+            nir_orig = orig_imgs[i, :, :, 3]
+            nir_rec = rec_imgs[i, :, :, 3]
+            nir_merge = np.concatenate([nir_orig, nir_rec], axis=1)
+            plt.imshow(normalize_uint8(nir_merge), cmap='gray')
+            plt.axis('off')
+            if titles:
+                plt.title(f"{titles[i]} - NIR (Orig|Rec)")
+
+        elif channels == 13:
+            # ====== Sentinel-2 ======
+            # Select RGB bands by index (default: B4,B3,B2 -> (3,2,1))
+            rgb_orig = orig_imgs[i, :, :, list(s2_rgb_indices)]
+            rgb_rec = rec_imgs[i, :, :, list(s2_rgb_indices)]
+
+            plt.subplot(2, num_images, i + 1)
+            plt.imshow(normalize_uint8(rgb_orig))
+            plt.axis('off')
+            if titles:
+                plt.title(f"{titles[i]} - Orig (S2 RGB)")
+
+            plt.subplot(2, num_images, i + 1 + num_images)
+            plt.imshow(normalize_uint8(rgb_rec))
+            plt.axis('off')
+            if titles:
+                plt.title(f"{titles[i]} - Rec (S2 RGB)")
+
+        else:
+            raise ValueError(f"Unsupported number of channels: {channels}")
 
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
