@@ -23,11 +23,12 @@ def visualize_images(original, reconstructed, titles=None, save_path=None):
         return x
 
     def normalize_uint8(img):
-        img_min, img_max = img.min(), img.max()
-        if img_max > img_min:
-            img = (img - img_min) / (img_max - img_min) * 255.0
-        else:
-            img = np.zeros_like(img)
+        # img_min, img_max = img.min(), img.max()
+        # if img_max > img_min:
+        #     img = (img - img_min) / (img_max - img_min) * 255.0
+        # else:
+        #     img = np.zeros_like(img)
+        img = np.clip(img*255.0, 0, 255)
         return img.astype('uint8')
 
     orig_imgs = to_hwc(original)

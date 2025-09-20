@@ -3,6 +3,7 @@ import time
 import torch
 import torch.nn as nn
 from torch import optim
+import torch.nn.functional as F
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from utils.tools import EarlyStopping, adjust_learning_rate
@@ -96,7 +97,48 @@ class Exp_Pretrain(Exp_Basic):
                 outputs = self.model(x, mask)
                 mask_expanded = mask.repeat(1, 1, 1, x.shape[-1])
 
-                loss = criterion(x[mask_expanded == 0], outputs[mask_expanded == 0])
+                blended = outputs.clone()
+                blended[mask_expanded == 1] = x[mask_expanded == 1]
+
+                def gradient(img):
+                    dx = img[:, :, 1:, :] - img[:, :, :-1, :]
+                    dy = img[:, 1:, :, :] - img[:, :-1, :, :]
+                    return dx, dy
+
+                dx_pred, dy_pred = gradient(blended)
+                dx_gt, dy_gt = gradient(x)
+
+                boundary_x = (mask_expanded[:, :, 1:, :] != mask_expanded[:, :, :-1, :]).float()
+                boundary_y = (mask_expanded[:, 1:, :, :] != mask_expanded[:, :-1, :, :]).float()
+
+                boundary_loss = ((dx_pred - dx_gt) * boundary_x).abs().mean() + ((dy_pred - dy_gt) * boundary_y).abs().mean()
+
+                mask_1ch = mask.permute(0, 3, 1, 2)
+                outputs_4d = outputs.permute(0, 3, 1, 2)
+                x_4d = x.permute(0, 3, 1, 2)
+                C = outputs_4d.shape[1]
+
+                kernel = torch.ones((1, 1, 3, 3), device=outputs.device, dtype=outputs.dtype) / 9.0
+                kernel_C = kernel.repeat(C, 1, 1, 1)
+
+                real_sum = F.conv2d(x_4d * mask_1ch, kernel_C, padding=1, groups=C)
+                real_count = F.conv2d(mask_1ch, kernel, padding=1)
+                real_count_clamped = real_count.clamp(min=1e-6)
+                neighborhood_avg = real_sum / real_count_clamped
+
+                weight = real_count
+                mask_missing = (1 - mask_1ch)
+                mask_missing_C = mask_missing.repeat(1, C, 1, 1)
+                weight_C = weight.repeat(1, C, 1, 1)
+
+                smooth_loss = ((torch.abs(outputs_4d - neighborhood_avg) * mask_missing_C) * weight_C).sum() / (mask_missing_C.sum() + 1e-6)
+
+                loss = (
+                    criterion(x[mask_expanded == 0], outputs[mask_expanded == 0])
+                    + 1.0 * boundary_loss
+                    + 1.0 * smooth_loss
+                )
+
                 loss.backward()
                 model_optim.step()
                 train_loss.append(loss.item())
@@ -125,7 +167,7 @@ class Exp_Pretrain(Exp_Basic):
             adjust_learning_rate(model_optim, epoch + 1, self.args)
 
             if epoch == 0:
-                self.cal_efficiency(x, mask, outputs)
+                self.cal_efficiency(x, mask, outputs, setting)
 
         self._save_loss_plot(path)
 
@@ -167,9 +209,10 @@ class Exp_Pretrain(Exp_Basic):
                 iter_count += 1
                 batch_x = batch_x.float().to(self.device)
                 masks = masks.float().to(self.device)
+                mask_expanded = masks.repeat(1, 1, 1, batch_x.shape[-1])
                 reconstructed = self.model(batch_x, masks)
 
-                loss = criterion(reconstructed, batch_x)
+                loss = criterion(batch_x[mask_expanded == 0],  reconstructed[mask_expanded == 0])
                 total_loss += loss.item()
 
                 all_preds.append(reconstructed.cpu().numpy())
@@ -183,6 +226,9 @@ class Exp_Pretrain(Exp_Basic):
                     )
                     np.save(os.path.join(result_dir, f"pred_{i}.npy"), reconstructed.cpu().numpy())
                     np.save(os.path.join(result_dir, f"targets_{i}.npy"), batch_x.cpu().numpy())
+                    np.save(os.path.join(result_dir, f"pred_masked_{i}.npy"), reconstructed[mask_expanded == 0].cpu().numpy())
+                    np.save(os.path.join(result_dir, f"targets_masked_{i}.npy"), batch_x[mask_expanded == 0].cpu().numpy())
+
                     np.save(os.path.join(result_dir, f"masks_{i}.npy"), masks.cpu().numpy())
                     iter_time = (time.time() - time_start) / iter_count
                     eta = iter_time * (len(test_loader) - i - 1)
@@ -207,7 +253,7 @@ class Exp_Pretrain(Exp_Basic):
 
 
 
-    def cal_efficiency(self, batch_x, batch_mask, outputs):
+    def cal_efficiency(self, batch_x, batch_mask, outputs, setting):
         """Compute model parameters, FLOPs, and activations."""
         self.model.eval()
 
@@ -237,8 +283,8 @@ class Exp_Pretrain(Exp_Basic):
         for h in hooks:
             h.remove()
 
-        os.makedirs('./efficiency', exist_ok=True)
-        with open(f'./efficiency/{self.args.model}.txt', 'w') as f:
+        os.makedirs(f'./efficiency/{setting}/', exist_ok=True)
+        with open(f'./efficiency/{setting}/{self.args.model}.txt', 'w') as f:
             f.write(f"Params (trainable): {count_parameters(self.model)}\n")
             f.write(f"MACs: {macs}\n")
             f.write(f"FLOPs: {flops}\n")

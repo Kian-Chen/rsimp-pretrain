@@ -45,6 +45,7 @@ class Model(nn.Module):
         x: [B, H, W, C]
         mask: [B, H, W, C], 1: visible, 0: missing
         """
+        x = x * mask  # Apply mask to input
         original_x = x.clone()
         x = x.permute(0, 3, 1, 2)
         mask = mask.permute(0, 3, 1, 2)

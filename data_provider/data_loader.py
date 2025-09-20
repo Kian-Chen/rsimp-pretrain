@@ -71,6 +71,24 @@ class Dataset_EuroSAT_MS(Dataset):
 
         self.channels = S2_STANDARD_ORDER
 
+        all_data = []
+        for f in self.files:
+            try:
+                with rasterio.open(f) as src:
+                    d = src.read().astype(np.float32) / 10000.0
+                    d = d[self.channels, :, :].reshape(len(self.channels), -1)
+                    all_data.append(d)
+            except:
+                continue
+        if len(all_data) > 0:
+            all_data = np.concatenate(all_data, axis=1)
+            self.mean = all_data.mean(axis=1)
+            self.std = all_data.std(axis=1)
+            del all_data
+        else:
+            self.mean = np.zeros(len(self.channels))
+            self.std = np.ones(len(self.channels))
+
     def __len__(self):
         return len(self.files)
 
@@ -81,6 +99,9 @@ class Dataset_EuroSAT_MS(Dataset):
                 with rasterio.open(path) as src:
                     data = src.read().astype(np.float32) / 10000.0
                     data = data[self.channels, :, :]
+                    data = (data - (self.mean - 3 * self.std)[:, None, None]) / ((6 * self.std)[:, None, None] + 1e-6)
+                    data = np.clip(data, 0.0, 1.0)
+
                 if data.shape[1:3] != self.image_size:
                     data = np.stack([np.array(Image.fromarray(d).resize(self.image_size, resample=Image.BILINEAR))
                                      for d in data])
@@ -129,6 +150,25 @@ class Dataset_EuroSAT_RGB(Dataset):
                          EUROSAT_MS_BAND_ORDER['B3'],
                          EUROSAT_MS_BAND_ORDER['B2']]
 
+        all_data = []
+        for f in self.files:
+            try:
+                with rasterio.open(f) as src:
+                    d = src.read().astype(np.float32) / 10000.0
+                    d = d[self.channels, :, :].reshape(len(self.channels), -1)
+                    all_data.append(d)
+            except:
+                continue
+        if len(all_data) > 0:
+            all_data = np.concatenate(all_data, axis=1)
+            self.mean = all_data.mean(axis=1)
+            self.std = all_data.std(axis=1)
+            del all_data
+        else:
+            self.mean = np.zeros(len(self.channels))
+            self.std = np.ones(len(self.channels))
+
+
     def __len__(self):
         return len(self.files)
 
@@ -139,6 +179,8 @@ class Dataset_EuroSAT_RGB(Dataset):
                 with rasterio.open(path) as src:
                     data = src.read().astype(np.float32) / 10000.0
                     data = data[self.channels, :, :]
+                    data = (data - (self.mean - 3 * self.std)[:, None, None]) / ((6 * self.std)[:, None, None] + 1e-6)
+                    data = np.clip(data, 0.0, 1.0)
                 if data.shape[1:3] != self.image_size:
                     data = np.stack([np.array(Image.fromarray(d).resize(self.image_size, resample=Image.BILINEAR))
                                      for d in data])
@@ -185,6 +227,25 @@ class Dataset_EuroSAT_NIR(Dataset):
 
         self.channels = [EUROSAT_MS_BAND_ORDER['B8']]
 
+        all_data = []
+        for f in self.files:
+            try:
+                with rasterio.open(f) as src:
+                    d = src.read().astype(np.float32) / 10000.0
+                    d = d[self.channels, :, :].reshape(len(self.channels), -1)
+                    all_data.append(d)
+            except:
+                continue
+        if len(all_data) > 0:
+            all_data = np.concatenate(all_data, axis=1)
+            self.mean = all_data.mean(axis=1)
+            self.std = all_data.std(axis=1)
+            del all_data
+        else:
+            self.mean = np.zeros(len(self.channels))
+            self.std = np.ones(len(self.channels))
+
+
     def __len__(self):
         return len(self.files)
 
@@ -195,6 +256,9 @@ class Dataset_EuroSAT_NIR(Dataset):
                 with rasterio.open(path) as src:
                     data = src.read().astype(np.float32) / 10000.0
                     data = data[self.channels, :, :]
+                    data = (data - (self.mean - 3 * self.std)[:, None, None]) / ((6 * self.std)[:, None, None] + 1e-6)
+                    data = np.clip(data, 0.0, 1.0)
+
                 if data.shape[1:3] != self.image_size:
                     data = np.stack([np.array(Image.fromarray(d).resize(self.image_size, resample=Image.BILINEAR))
                                      for d in data])

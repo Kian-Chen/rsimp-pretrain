@@ -25,7 +25,7 @@ python -u run.py \
   --batch_size $batch_size \
   --train_epoch 100 \
   --des 'Exp' \
-  --itr 5 \
+  --itr 1 \
   --learning_rate $lr \
   --gpu 5
 

@@ -18,14 +18,14 @@ python -u run.py \
   --mask_rate ${mask_rate} \
   --model $model_name \
   --data eurosat_rgb \
-  --d_model 192 \
+  --d_model 768 \
   --c_in 3 \
   --c_out 3 \
   --patience 4 \
   --batch_size $batch_size \
   --train_epoch 100 \
   --des 'Exp' \
-  --itr 5 \
+  --itr 1 \
   --learning_rate $lr \
   --gpu 4
 
