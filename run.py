@@ -45,6 +45,7 @@ parser.add_argument('--mlp_ratio', type=float, default=4.0)
 parser.add_argument('--mask_ratio', type=float, default=0.75)
 
 # optimization
+parser.add_argument('--optimizer', type=str, default='muon', help='optimizer type')
 parser.add_argument('--num_workers', type=int, default=2, help='data loader num workers')
 parser.add_argument('--itr', type=int, default=5, help='experiments times')
 parser.add_argument('--train_epochs', type=int, default=100, help='train epochs')

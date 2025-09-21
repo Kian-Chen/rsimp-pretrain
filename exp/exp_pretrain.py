@@ -14,6 +14,7 @@ from tqdm import tqdm
 import warnings
 from thop import profile
 import matplotlib.pyplot as plt
+from optimizer.muon import SingleDeviceMuonWithAuxAdam
 
 warnings.filterwarnings('ignore')
 
@@ -40,7 +41,30 @@ class Exp_Pretrain(Exp_Basic):
         return dataset, dataloader
 
     def _select_optimizer(self):
-        return optim.Adam(self.model.parameters(), lr=self.args.learning_rate, weight_decay=self.args.weight)
+        if self.args.optimizer == 'muon':
+            muon_params = []
+            adam_params = []
+
+            for n, p in self.model.named_parameters():
+                if p.ndim >= 2:
+                    if p.requires_grad:
+                        muon_params.append(p)
+                    else:
+                        adam_params.append(p)
+                else:
+                    adam_params.append(p)
+
+            param_groups = [
+                dict(params=muon_params, lr=self.args.learning_rate * 5, momentum=0.95, use_muon=True),
+                dict(params=adam_params, lr=self.args.learning_rate, betas=(0.9, 0.95), eps=1e-8, use_muon=False)
+            ]
+
+            optimizer = SingleDeviceMuonWithAuxAdam(param_groups)
+            return optimizer
+        elif self.args.optimizer == 'adam':
+            return optim.Adam(self.model.parameters(), lr=self.args.learning_rate, weight_decay=self.args.weight)
+        else:
+            raise ValueError(f"Unknown optimizer {self.args.optimizer}")
 
     def _select_criterion(self):
         return nn.L1Loss()
