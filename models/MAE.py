@@ -89,7 +89,7 @@ class TransformerDecoder(nn.Module):
 class Model(nn.Module):
     """
     Simple Masked Autoencoder (MAE) for image completion.
-    Expects inputs: x [B, H, W, C], mask [B, H, W, C]
+    Expects inputs: x [B, H, W, C], mask [B, H, W, 1]
     
     True MAE implementation with proper masking strategy for inpainting
     """
@@ -184,7 +184,7 @@ class Model(nn.Module):
     def forward(self, x, mask):
         """
         x: [B, H, W, C]
-        mask: [B, H, W, C], 1: visible, 0: missing (to be inpainted)
+        mask: [B, H, W, 1], 1: visible, 0: missing (to be inpainted)
         
         Key constraint: Visible regions in input must remain unchanged in output
         """

@@ -4,7 +4,7 @@ import torch.nn as nn
 class Model(nn.Module):
     """
     Simple CNN for image completion.
-    Expects inputs: x [B, H, W, C], mask [B, H, W, C]
+    Expects inputs: x [B, H, W, C], mask [B, H, W, 1]
     """
 
     def __init__(self, configs):
@@ -43,7 +43,7 @@ class Model(nn.Module):
     def forward(self, x, mask):
         """
         x: [B, H, W, C]
-        mask: [B, H, W, C], 1: visible, 0: missing
+        mask: [B, H, W, 1], 1: visible, 0: missing
         """
         x = x * mask  # Apply mask to input
         original_x = x.clone()
