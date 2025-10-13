@@ -3,11 +3,6 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 
-import matplotlib.pyplot as plt
-import os
-import torch
-import numpy as np
-
 def visualize_images(original, reconstructed, titles=None, save_path=None, s2_rgb_indices=(3, 2, 1)):
     """
     Visualize original and reconstructed images side by side, handling different channel cases:
@@ -25,7 +20,7 @@ def visualize_images(original, reconstructed, titles=None, save_path=None, s2_rg
         """Convert to (B, H, W, C) numpy array."""
         if isinstance(x, torch.Tensor):
             x = x.detach().cpu().numpy()
-        if x.ndim == 4 and x.shape[1] <= 13:  # (B, C, H, W)
+        if x.ndim == 4 and x.shape[1] <= 13:  # (B, C, H, W) -> (B, H, W, C)
             x = x.transpose(0, 2, 3, 1)
         return x
 
@@ -35,16 +30,16 @@ def visualize_images(original, reconstructed, titles=None, save_path=None, s2_rg
         return img.astype('uint8')
 
     orig_imgs = to_hwc(original)
-    rec_imgs = to_hwc(reconstructed)
+    rec_imgs  = to_hwc(reconstructed)
     num_images = orig_imgs.shape[0]
-    channels = orig_imgs.shape[-1]
+    channels   = orig_imgs.shape[-1]
 
     # Figure layout
     plt.figure(figsize=(5 * num_images, 8))
 
     for i in range(num_images):
         if channels == 3:
-            # ====== RGB ======
+            # RGB
             plt.subplot(2, num_images, i + 1)
             plt.imshow(normalize_uint8(orig_imgs[i]))
             plt.axis('off')
@@ -58,10 +53,9 @@ def visualize_images(original, reconstructed, titles=None, save_path=None, s2_rg
                 plt.title(f"{titles[i]} - Rec (RGB)")
 
         elif channels == 4:
-            # ====== RGB + NIR ======
             # RGB
             plt.subplot(3, num_images, i + 1)
-            plt.imshow(normalize_uint8(orig_imgs[i, :, :, :3]))  # First 3 channels
+            plt.imshow(normalize_uint8(orig_imgs[i, :, :, :3]))
             plt.axis('off')
             if titles:
                 plt.title(f"{titles[i]} - Orig (RGB)")
@@ -75,7 +69,7 @@ def visualize_images(original, reconstructed, titles=None, save_path=None, s2_rg
             # NIR
             plt.subplot(3, num_images, i + 1 + 2 * num_images)
             nir_orig = orig_imgs[i, :, :, 3]
-            nir_rec = rec_imgs[i, :, :, 3]
+            nir_rec  = rec_imgs[i,  :, :, 3]
             nir_merge = np.concatenate([nir_orig, nir_rec], axis=1)
             plt.imshow(normalize_uint8(nir_merge), cmap='gray')
             plt.axis('off')
@@ -83,10 +77,9 @@ def visualize_images(original, reconstructed, titles=None, save_path=None, s2_rg
                 plt.title(f"{titles[i]} - NIR (Orig|Rec)")
 
         elif channels == 13:
-            # ====== Sentinel-2 ======
-            # Select RGB bands by index (default: B4,B3,B2 -> (3,2,1))
-            rgb_orig = orig_imgs[i, :, :, list(s2_rgb_indices)]
-            rgb_rec = rec_imgs[i, :, :, list(s2_rgb_indices)]
+            # use np.take to avoid advanced-indexing axis moves
+            rgb_orig = np.take(orig_imgs[i], s2_rgb_indices, axis=-1)
+            rgb_rec  = np.take(rec_imgs[i],  s2_rgb_indices, axis=-1)
 
             plt.subplot(2, num_images, i + 1)
             plt.imshow(normalize_uint8(rgb_orig))
