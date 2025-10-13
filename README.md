@@ -73,21 +73,21 @@ EuroSAT_MS/
 
 ### Channels (13 Channels)
 
-| Channel | Band Name    | Wavelength | Resolution |
-| ------- | ------------ | ---------- | ---------- |
-| 0       | B2 - Blue    | 496.6 nm   | 10m        |
-| 1       | B3 - Green   | 560.0 nm   | 10m        |
-| 2       | B4 - Red     | 664.5 nm   | 10m        |
-| 3       | B8 - NIR     | 835.1 nm   | 10m        |
-| 4       | B5 - RE1     | 703.9 nm   | 20m        |
-| 5       | B6 - RE2     | 740.2 nm   | 20m        |
-| 6       | B7 - RE3     | 782.5 nm   | 20m        |
-| 7       | B8A - NNIR   | 864.8 nm   | 20m        |
-| 8       | B11 - SWIR1  | 1613.7 nm  | 20m        |
-| 9       | B12 - SWIR2  | 2202.4 nm  | 20m        |
-| 10      | B1 - Coastal | 443.9 nm   | 60m        |
-| 11      | B9 - WV      | 945.0 nm   | 60m        |
-| 12      | B10 - Cirrus | 1373.5 nm  | 60m        |
+| File Idx | Band Name    | Wavelength | Resolution |
+| -------- | ------------ | ---------- | ---------- |
+| 0        | B2 - Blue    | 496.6 nm   | 10 m       |
+| 1        | B3 - Green   | 560.0 nm   | 10 m       |
+| 2        | B4 - Red     | 664.5 nm   | 10 m       |
+| 3        | B8 - NIR     | 835.1 nm   | 10 m       |
+| 4        | B5 - RE1     | 703.9 nm   | 20 m       |
+| 5        | B6 - RE2     | 740.2 nm   | 20 m       |
+| 6        | B7 - RE3     | 782.5 nm   | 20 m       |
+| 7        | B8A - NNIR   | 864.8 nm   | 20 m       |
+| 8        | B9 - WV      | 945.0 nm   | 60 m       |
+| 9        | B10 - Cirrus | 1373.5 nm  | 60 m       |
+| 10       | B1 - Coastal | 443.9 nm   | 60 m       |
+| 11       | B11 - SWIR1  | 1613.7 nm  | 20 m       |
+| 12       | B12 - SWIR2  | 2202.4 nm  | 20 m       |
 
 ### Key Features
 

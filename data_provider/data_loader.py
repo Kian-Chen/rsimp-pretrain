@@ -7,15 +7,17 @@ import rasterio
 import random
 from PIL import Image
 
-# Sentinel-2 standard band order
-S2_STANDARD_ORDER = list(range(13))
-
 # EuroSAT-MS band mapping
 EUROSAT_MS_BAND_ORDER = {
     'B2': 0, 'B3': 1, 'B4': 2, 'B8': 3,
     'B5': 4, 'B6': 5, 'B7': 6, 'B8A': 7,
-    'B11': 8, 'B12': 9, 'B1': 10, 'B9': 11, 'B10': 12
+    'B9': 8, 'B10': 9, 'B1': 10, 'B11': 11, 'B12': 12
 }
+
+# Sentinel-2 standard band order
+S2_STANDARD_ORDER = [EUROSAT_MS_BAND_ORDER[k] for k in ('B1','B2','B3','B4','B5','B6','B7','B8','B8A','B9','B10','B11','B12')]
+
+
 
 
 def generate_block_mask(h, w, missing_rate, block_size=8):
